@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <span className="font-semibold">Absensi Balet</span>
           <nav className="flex gap-4 text-sm">
             {NAV.map((item) => (
-              <Link key={item.href} href={item.href} className="text-gray-700 hover:text-black">
+              <Link key={item.href} href={item.href} className="text-gray-500 hover:text-foreground">
                 {item.label}
               </Link>
             ))}

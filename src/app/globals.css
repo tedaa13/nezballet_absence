@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -16,6 +17,8 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    /* Tells the browser to draw native controls (select dropdowns, date pickers) dark too. */
+    color-scheme: dark;
   }
 }
 
@@ -23,4 +26,12 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+input,
+select,
+textarea,
+option {
+  background-color: var(--background);
+  color: var(--foreground);
 }
