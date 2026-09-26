@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { branchWhere, requireAdmin } from "@/lib/admin";
 import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
 import { createSchedule, deleteSchedule } from "./actions";
 import { DAYS, ScheduleFields } from "./schedule-fields";
 
 export default async function SchedulesPage() {
+  const scope = await requireAdmin();
   const [schedules, classes, teachers] = await Promise.all([
     prisma.schedule.findMany({
+      where: { branchId: branchWhere(scope) },
       include: { branch: true, class: true, teacher: { include: { user: true } } },
       orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
     }),
-    prisma.class.findMany({ where: { status: "ACTIVE" }, include: { branch: true }, orderBy: { name: "asc" } }),
+    prisma.class.findMany({ where: { branchId: branchWhere(scope), status: "ACTIVE" }, include: { branch: true }, orderBy: { name: "asc" } }),
     prisma.teacher.findMany({ where: { status: { not: "INACTIVE" } }, include: { user: true }, orderBy: { id: "asc" } }),
   ]);
 

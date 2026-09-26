@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { branchWhere, requireAdmin } from "@/lib/admin";
 import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
 import { createBranch, deleteBranch } from "./actions";
 import { BranchFields } from "./branch-fields";
 
 export default async function BranchesPage() {
-  const branches = await prisma.branch.findMany({ orderBy: { id: "asc" } });
+  const scope = await requireAdmin();
+  const branches = await prisma.branch.findMany({ where: { id: branchWhere(scope) }, orderBy: { id: "asc" } });
 
   return (
     <div className="space-y-8">
@@ -36,10 +38,12 @@ export default async function BranchesPage() {
                   <Link href={`/admin/branches/${b.id}/qr`} className="text-blue-600 underline">
                     QR
                   </Link>
-                  <DeleteButton
-                    action={deleteBranch.bind(null, b.id)}
-                    confirmMessage={`Hapus cabang "${b.name}"?`}
-                  />
+                  {scope.isSuperadmin && (
+                    <DeleteButton
+                      action={deleteBranch.bind(null, b.id)}
+                      confirmMessage={`Hapus cabang "${b.name}"?`}
+                    />
+                  )}
                 </div>
               </td>
             </tr>
@@ -47,18 +51,20 @@ export default async function BranchesPage() {
           {branches.length === 0 && (
             <tr>
               <td colSpan={5} className="py-4 text-gray-500">
-                Belum ada cabang.
+                {scope.isSuperadmin ? "Belum ada cabang." : "Anda belum ditugaskan ke cabang mana pun. Hubungi superadmin."}
               </td>
             </tr>
           )}
         </tbody>
       </table>
 
-      <ActionForm action={createBranch} resetOnSuccess className="max-w-md space-y-3 border-t pt-6">
-        <h2 className="font-medium">Tambah Cabang</h2>
-        <BranchFields />
-        <SubmitButton />
-      </ActionForm>
+      {scope.isSuperadmin && (
+        <ActionForm action={createBranch} resetOnSuccess className="max-w-md space-y-3 border-t pt-6">
+          <h2 className="font-medium">Tambah Cabang</h2>
+          <BranchFields />
+          <SubmitButton />
+        </ActionForm>
+      )}
     </div>
   );
 }

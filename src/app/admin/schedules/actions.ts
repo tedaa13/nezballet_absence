@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { type ActionResult, optionalString, requireAdmin } from "@/lib/admin";
+import { type ActionResult, NO_ACCESS, canAccessBranch, optionalString, requireAdmin } from "@/lib/admin";
 
 async function parseSchedule(formData: FormData) {
   const classId = Number(formData.get("classId"));
@@ -39,9 +39,10 @@ async function parseSchedule(formData: FormData) {
 }
 
 export async function createSchedule(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const scope = await requireAdmin();
   const parsed = await parseSchedule(formData);
   if (parsed.error) return { ok: false, message: parsed.error };
+  if (!canAccessBranch(scope, parsed.data!.branchId)) return NO_ACCESS;
 
   await prisma.schedule.create({ data: parsed.data! });
   revalidatePath("/admin/schedules");
@@ -49,9 +50,13 @@ export async function createSchedule(_prev: ActionResult, formData: FormData): P
 }
 
 export async function updateSchedule(scheduleId: number, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const scope = await requireAdmin();
   const parsed = await parseSchedule(formData);
   if (parsed.error) return { ok: false, message: parsed.error };
+  const existing = await prisma.schedule.findUnique({ where: { id: scheduleId } });
+  if (!existing || !canAccessBranch(scope, existing.branchId) || !canAccessBranch(scope, parsed.data!.branchId)) {
+    return NO_ACCESS;
+  }
 
   await prisma.schedule.update({
     where: { id: scheduleId },
@@ -62,7 +67,9 @@ export async function updateSchedule(scheduleId: number, _prev: ActionResult, fo
 }
 
 export async function deleteSchedule(scheduleId: number): Promise<ActionResult> {
-  await requireAdmin();
+  const scope = await requireAdmin();
+  const existing = await prisma.schedule.findUnique({ where: { id: scheduleId } });
+  if (!existing || !canAccessBranch(scope, existing.branchId)) return NO_ACCESS;
   const attendanceCount = await prisma.attendance.count({ where: { scheduleId } });
   if (attendanceCount > 0) {
     return {

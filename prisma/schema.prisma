@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   // Non-pooled connection for migrations (Neon: the URL without "-pooler"). Same as DATABASE_URL locally.
   directUrl = env("DIRECT_URL")
@@ -48,6 +48,8 @@ model User {
   role      Role       @default(GURU)
   status    UserStatus @default(ACTIVE)
   teacher   Teacher?
+  // Branches an ADMIN manages. Ignored for SUPERADMIN (sees everything) and GURU.
+  branches  Branch[]   @relation("AdminBranches")
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -63,6 +65,7 @@ model Branch {
   status      UserStatus @default(ACTIVE)
   classes     Class[]
   schedules   Schedule[]
+  admins      User[]     @relation("AdminBranches")
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }

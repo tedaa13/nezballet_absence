@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { branchWhere, canAccessBranch, requireAdmin } from "@/lib/admin";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, inputClass } from "@/components/field";
 import { updateSchedule } from "../../actions";
@@ -8,12 +9,13 @@ import { ScheduleFields } from "../../schedule-fields";
 
 export default async function EditSchedulePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const scope = await requireAdmin();
   const [schedule, classes, teachers] = await Promise.all([
     prisma.schedule.findUnique({ where: { id: Number(id) } }),
-    prisma.class.findMany({ include: { branch: true }, orderBy: { name: "asc" } }),
+    prisma.class.findMany({ where: { branchId: branchWhere(scope) }, include: { branch: true }, orderBy: { name: "asc" } }),
     prisma.teacher.findMany({ include: { user: true }, orderBy: { id: "asc" } }),
   ]);
-  if (!schedule) notFound();
+  if (!schedule || !canAccessBranch(scope, schedule.branchId)) notFound();
 
   return (
     <ActionForm action={updateSchedule.bind(null, schedule.id)} className="max-w-md space-y-3">

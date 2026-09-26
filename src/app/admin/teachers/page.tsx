@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/lib/admin";
 import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
 import { Field, inputClass } from "@/components/field";
 import { createTeacher, deleteTeacher } from "./actions";
 import { TEACHER_STATUS_LABEL, TeacherFields } from "./teacher-fields";
 
 export default async function TeachersPage() {
+  const scope = await requireAdmin();
   const teachers = await prisma.teacher.findMany({
     include: { user: true },
     orderBy: { id: "asc" },
@@ -39,10 +41,12 @@ export default async function TeachersPage() {
                   <Link href={`/admin/teachers/${t.id}/edit`} className="text-blue-600 underline">
                     Edit
                   </Link>
-                  <DeleteButton
-                    action={deleteTeacher.bind(null, t.id)}
-                    confirmMessage={`Hapus guru "${t.user.name}" beserta akun loginnya?`}
-                  />
+                  {scope.isSuperadmin && (
+                    <DeleteButton
+                      action={deleteTeacher.bind(null, t.id)}
+                      confirmMessage={`Hapus guru "${t.user.name}" beserta akun loginnya?`}
+                    />
+                  )}
                 </div>
               </td>
             </tr>

@@ -4,7 +4,15 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { type ActionResult, optionalNumber, optionalString, requireAdmin } from "@/lib/admin";
+import {
+  type ActionResult,
+  NO_ACCESS,
+  canAccessBranch,
+  optionalNumber,
+  optionalString,
+  requireAdmin,
+  requireSuperadmin,
+} from "@/lib/admin";
 
 function parseBranch(formData: FormData) {
   const latitude = Number(formData.get("latitude"));
@@ -23,7 +31,7 @@ function parseBranch(formData: FormData) {
 }
 
 export async function createBranch(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  await requireSuperadmin();
   const parsed = parseBranch(formData);
   if (parsed.error) return { ok: false, message: parsed.error };
 
@@ -33,7 +41,8 @@ export async function createBranch(_prev: ActionResult, formData: FormData): Pro
 }
 
 export async function updateBranch(id: number, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const scope = await requireAdmin();
+  if (!canAccessBranch(scope, id)) return NO_ACCESS;
   const parsed = parseBranch(formData);
   if (parsed.error) return { ok: false, message: parsed.error };
 
@@ -46,7 +55,7 @@ export async function updateBranch(id: number, _prev: ActionResult, formData: Fo
 }
 
 export async function deleteBranch(id: number): Promise<ActionResult> {
-  await requireAdmin();
+  await requireSuperadmin();
   const [classCount, scheduleCount] = await Promise.all([
     prisma.class.count({ where: { branchId: id } }),
     prisma.schedule.count({ where: { branchId: id } }),
@@ -64,7 +73,8 @@ export async function deleteBranch(id: number): Promise<ActionResult> {
 }
 
 export async function regenerateBranchQr(id: number): Promise<ActionResult> {
-  await requireAdmin();
+  const scope = await requireAdmin();
+  if (!canAccessBranch(scope, id)) return NO_ACCESS;
   await prisma.branch.update({ where: { id }, data: { qrSecret: randomUUID() } });
   revalidatePath("/admin/branches");
   revalidatePath(`/admin/branches/${id}/qr`);

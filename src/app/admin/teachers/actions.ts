@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { type ActionResult, isUniqueViolation, optionalString, requireAdmin } from "@/lib/admin";
+import { type ActionResult, isUniqueViolation, optionalString, requireAdmin, requireSuperadmin } from "@/lib/admin";
 
 const MIN_PASSWORD = 6;
 
@@ -86,7 +86,7 @@ export async function updateTeacher(teacherId: number, _prev: ActionResult, form
 }
 
 export async function deleteTeacher(teacherId: number): Promise<ActionResult> {
-  await requireAdmin();
+  await requireSuperadmin();
   const teacher = await prisma.teacher.findUnique({
     where: { id: teacherId },
     include: { _count: { select: { schedules: true, attendances: true } } },

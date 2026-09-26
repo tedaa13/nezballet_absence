@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { type ActionResult, optionalNumber, optionalString, requireAdmin } from "@/lib/admin";
+import {
+  type ActionResult,
+  NO_ACCESS,
+  canAccessBranch,
+  optionalNumber,
+  optionalString,
+  requireAdmin,
+} from "@/lib/admin";
 
 function parseClass(formData: FormData) {
   return {
@@ -15,9 +22,10 @@ function parseClass(formData: FormData) {
 }
 
 export async function createClass(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const scope = await requireAdmin();
   const data = parseClass(formData);
   if (!data.branchId) return { ok: false, message: "Pilih cabang." };
+  if (!canAccessBranch(scope, data.branchId)) return NO_ACCESS;
 
   await prisma.class.create({ data });
   revalidatePath("/admin/classes");
@@ -25,9 +33,13 @@ export async function createClass(_prev: ActionResult, formData: FormData): Prom
 }
 
 export async function updateClass(classId: number, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
+  const scope = await requireAdmin();
   const data = parseClass(formData);
   if (!data.branchId) return { ok: false, message: "Pilih cabang." };
+  const existing = await prisma.class.findUnique({ where: { id: classId } });
+  if (!existing || !canAccessBranch(scope, existing.branchId) || !canAccessBranch(scope, data.branchId)) {
+    return NO_ACCESS;
+  }
 
   await prisma.$transaction([
     prisma.class.update({
@@ -43,7 +55,9 @@ export async function updateClass(classId: number, _prev: ActionResult, formData
 }
 
 export async function deleteClass(classId: number): Promise<ActionResult> {
-  await requireAdmin();
+  const scope = await requireAdmin();
+  const existing = await prisma.class.findUnique({ where: { id: classId } });
+  if (!existing || !canAccessBranch(scope, existing.branchId)) return NO_ACCESS;
   const scheduleCount = await prisma.schedule.count({ where: { classId } });
   if (scheduleCount > 0) {
     return {

@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { branchWhere, requireAdmin } from "@/lib/admin";
 import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
 import { createClass, deleteClass } from "./actions";
 import { ClassFields } from "./class-fields";
 
 export default async function ClassesPage() {
+  const scope = await requireAdmin();
   const [classes, branches] = await Promise.all([
-    prisma.class.findMany({ include: { branch: true }, orderBy: { id: "asc" } }),
-    prisma.branch.findMany({ where: { status: "ACTIVE" }, orderBy: { name: "asc" } }),
+    prisma.class.findMany({ where: { branchId: branchWhere(scope) }, include: { branch: true }, orderBy: { id: "asc" } }),
+    prisma.branch.findMany({ where: { id: branchWhere(scope), status: "ACTIVE" }, orderBy: { name: "asc" } }),
   ]);
 
   return (

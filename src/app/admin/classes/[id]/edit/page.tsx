@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { branchWhere, canAccessBranch, requireAdmin } from "@/lib/admin";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, inputClass } from "@/components/field";
 import { updateClass } from "../../actions";
@@ -8,11 +9,12 @@ import { ClassFields } from "../../class-fields";
 
 export default async function EditClassPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const scope = await requireAdmin();
   const [cls, branches] = await Promise.all([
     prisma.class.findUnique({ where: { id: Number(id) } }),
-    prisma.branch.findMany({ orderBy: { name: "asc" } }),
+    prisma.branch.findMany({ where: { id: branchWhere(scope) }, orderBy: { name: "asc" } }),
   ]);
-  if (!cls) notFound();
+  if (!cls || !canAccessBranch(scope, cls.branchId)) notFound();
 
   return (
     <ActionForm action={updateClass.bind(null, cls.id)} className="max-w-md space-y-3">

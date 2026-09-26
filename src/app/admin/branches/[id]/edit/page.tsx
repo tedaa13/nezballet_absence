@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { canAccessBranch, requireAdmin } from "@/lib/admin";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Field, inputClass } from "@/components/field";
 import { updateBranch } from "../../actions";
@@ -8,8 +9,9 @@ import { BranchFields } from "../../branch-fields";
 
 export default async function EditBranchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const scope = await requireAdmin();
   const branch = await prisma.branch.findUnique({ where: { id: Number(id) } });
-  if (!branch) notFound();
+  if (!branch || !canAccessBranch(scope, branch.id)) notFound();
 
   return (
     <ActionForm action={updateBranch.bind(null, branch.id)} className="max-w-md space-y-3">

@@ -12,6 +12,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
           <nav className="flex gap-4 text-sm">
             <Link href="/teacher">Jadwal Saya</Link>
             <Link href="/teacher/history">Riwayat</Link>
+            <Link href="/teacher/account">Akun</Link>
           </nav>
         </div>
         <form
@@ -20,7 +21,9 @@ export default async function TeacherLayout({ children }: { children: React.Reac
             await signOut({ redirectTo: "/login" });
           }}
         >
-          <span className="mr-3 text-sm text-gray-500">{session?.user?.name}</span>
+          <Link href="/teacher/account" className="mr-3 text-sm text-gray-500 underline">
+            {session?.user?.name}
+          </Link>
           <button type="submit" className="text-sm text-blue-600 underline">
             Keluar
           </button>

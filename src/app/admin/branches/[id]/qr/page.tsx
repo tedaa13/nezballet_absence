@@ -2,13 +2,15 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
+import { canAccessBranch, requireAdmin } from "@/lib/admin";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { regenerateBranchQr } from "../../actions";
 
 export default async function BranchQrPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const scope = await requireAdmin();
   const branch = await prisma.branch.findUnique({ where: { id: Number(id) } });
-  if (!branch) notFound();
+  if (!branch || !canAccessBranch(scope, branch.id)) notFound();
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (await requestOrigin());
   const scanUrl = `${baseUrl}/scan/${branch.id}/${branch.qrSecret}`;

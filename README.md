@@ -10,7 +10,7 @@ Absensi guru berbasis web (bukan aplikasi mobile), memakai QR statis per cabang 
   - apakah lokasi GPS guru berada dalam radius toleransi cabang (Haversine, `src/lib/geo.ts`),
   - status HADIR/TELAT otomatis dari jam sistem.
 - Scan kedua di sesi yang sama = absen keluar (checkout), sekaligus input jumlah murid hadir.
-- 3 role: SUPERADMIN, ADMIN, GURU (lihat `prisma/schema.prisma`).
+- 3 role: SUPERADMIN (semua cabang + kelola akun admin di menu **Pengguna Admin**), ADMIN (admin cabang — hanya cabang yang ditugaskan), GURU. Semua role bisa ganti password sendiri di menu **Akun**.
 
 ## Setup lokal
 

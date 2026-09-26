@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { branchWhere, requireAdmin } from "@/lib/admin";
 import { formatDate, formatTime } from "@/lib/time";
 import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
 import { deleteAttendance, updateAttendance } from "./actions";
@@ -6,7 +7,9 @@ import { deleteAttendance, updateAttendance } from "./actions";
 const STATUS_OPTIONS = ["HADIR", "TELAT", "IZIN", "SAKIT", "TIDAK_HADIR"];
 
 export default async function AttendancesPage() {
+  const scope = await requireAdmin();
   const attendances = await prisma.attendance.findMany({
+    where: { schedule: { branchId: branchWhere(scope) } },
     include: {
       teacher: { include: { user: true } },
       schedule: { include: { class: true, branch: true } },
