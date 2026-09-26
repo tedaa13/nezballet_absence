@@ -50,30 +50,33 @@ export default async function TeachersPage() {
         </tbody>
       </table>
 
-      <form action={createTeacher} className="max-w-md space-y-3 border-t pt-6">
+      <form action={createTeacher} autoComplete="off" className="max-w-md space-y-3 border-t pt-6">
         <h2 className="font-medium">Tambah Guru</h2>
-        <input name="name" placeholder="Nama" required className="w-full rounded border px-3 py-2" />
-        <input
-          name="email"
-          type="email"
-          placeholder="Email (untuk login)"
-          required
-          className="w-full rounded border px-3 py-2"
-        />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password awal"
-          required
-          className="w-full rounded border px-3 py-2"
-        />
-        <input name="phone" placeholder="No. HP" className="w-full rounded border px-3 py-2" />
-        <input
-          name="specialization"
-          placeholder="Spesialisasi (mis. Ballet Basic)"
-          className="w-full rounded border px-3 py-2"
-        />
-        <input name="joinDate" type="date" className="w-full rounded border px-3 py-2" />
+        <label className="block text-sm">
+          Nama
+          <input name="name" required autoComplete="off" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
+        <label className="block text-sm">
+          Email (untuk login guru)
+          <input name="email" type="email" required autoComplete="off" placeholder="mis. sinta@nezballet.id" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
+        <label className="block text-sm">
+          Password awal guru
+          <input name="password" type="text" required minLength={6} autoComplete="new-password" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
+        <p className="text-xs text-gray-600">Catat email & password ini untuk diberikan ke guru — password tidak bisa dilihat lagi setelah disimpan.</p>
+        <label className="block text-sm">
+          No. HP
+          <input name="phone" autoComplete="off" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
+        <label className="block text-sm">
+          Spesialisasi
+          <input name="specialization" placeholder="mis. Ballet Basic" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
+        <label className="block text-sm">
+          Tanggal bergabung
+          <input name="joinDate" type="date" className="mt-1 w-full rounded border px-3 py-2" />
+        </label>
         <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">
           Simpan
         </button>
