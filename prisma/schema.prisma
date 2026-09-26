@@ -31,6 +31,12 @@ enum ScheduleStatus {
   INACTIVE
 }
 
+// How a check-in/out was made: scanning the branch QR, or straight from the teacher schedule page (GPS only).
+enum AttendanceMethod {
+  QR
+  DIRECT
+}
+
 enum AttendanceStatus {
   HADIR
   TELAT
@@ -55,19 +61,21 @@ model User {
 }
 
 model Branch {
-  id          Int        @id @default(autoincrement())
-  name        String
-  address     String?
-  latitude    Float
-  longitude   Float
-  radiusMeter Int        @default(100)
-  qrSecret    String     @unique @default(cuid())
-  status      UserStatus @default(ACTIVE)
-  classes     Class[]
-  schedules   Schedule[]
-  admins      User[]     @relation("AdminBranches")
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                 Int        @id @default(autoincrement())
+  name               String
+  address            String?
+  latitude           Float
+  longitude          Float
+  radiusMeter        Int        @default(100)
+  // Allow teachers to check in from their schedule page without scanning the QR (GPS check still applies).
+  allowDirectCheckin Boolean    @default(true)
+  qrSecret           String     @unique @default(cuid())
+  status             UserStatus @default(ACTIVE)
+  classes            Class[]
+  schedules          Schedule[]
+  admins             User[]     @relation("AdminBranches")
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 }
 
 model Teacher {
@@ -120,25 +128,27 @@ model Schedule {
 }
 
 model Attendance {
-  id             Int              @id @default(autoincrement())
+  id             Int               @id @default(autoincrement())
   scheduleId     Int
-  schedule       Schedule         @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  schedule       Schedule          @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   teacherId      Int
-  teacher        Teacher          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  teacher        Teacher           @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   attendanceDate DateTime // date only, midnight UTC
   checkInTime    DateTime?
   checkInLat     Float?
   checkInLng     Float?
   distanceMeter  Float?
-  status         AttendanceStatus @default(TIDAK_HADIR)
+  checkInMethod  AttendanceMethod?
+  status         AttendanceStatus  @default(TIDAK_HADIR)
   checkOutTime   DateTime?
   checkOutLat    Float?
   checkOutLng    Float?
+  checkOutMethod AttendanceMethod?
   studentCount   Int?
   notes          String?
   verifiedBy     Int?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@unique([scheduleId, attendanceDate])
 }

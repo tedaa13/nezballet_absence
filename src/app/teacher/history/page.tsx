@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime } from "@/lib/time";
+import { timeWithMethod } from "@/lib/labels";
 
 export default async function TeacherHistoryPage() {
   const session = await auth();
@@ -34,8 +35,8 @@ export default async function TeacherHistoryPage() {
               <td>
                 {a.schedule.class.name} / {a.schedule.branch.name}
               </td>
-              <td>{a.checkInTime ? formatTime(a.checkInTime) : "-"}</td>
-              <td>{a.checkOutTime ? formatTime(a.checkOutTime) : "-"}</td>
+              <td>{a.checkInTime ? timeWithMethod(formatTime(a.checkInTime), a.checkInMethod) : "-"}</td>
+              <td>{a.checkOutTime ? timeWithMethod(formatTime(a.checkOutTime), a.checkOutMethod) : "-"}</td>
               <td>{a.status}</td>
             </tr>
           ))}

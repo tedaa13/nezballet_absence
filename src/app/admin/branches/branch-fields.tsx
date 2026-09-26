@@ -57,6 +57,15 @@ export function BranchFields({ branch }: { branch?: Branch }) {
       <Field label="Radius toleransi (meter)">
         <input name="radiusMeter" type="number" min={10} defaultValue={branch?.radiusMeter ?? 100} className={inputClass} />
       </Field>
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="allowDirectCheckin" defaultChecked={branch?.allowDirectCheckin ?? true} className="mt-1" />
+        <span>
+          Izinkan absen langsung dari HP tanpa scan QR
+          <span className="block text-xs text-gray-600">
+            Guru tetap harus berada dalam radius cabang. Matikan jika cabang ini wajib scan QR.
+          </span>
+        </span>
+      </label>
     </>
   );
 }

@@ -26,6 +26,7 @@ function parseBranch(formData: FormData) {
       latitude,
       longitude,
       radiusMeter: optionalNumber(formData, "radiusMeter") ?? 100,
+      allowDirectCheckin: formData.get("allowDirectCheckin") === "on",
     },
   };
 }

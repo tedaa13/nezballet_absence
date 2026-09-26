@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { branchWhere, requireAdmin } from "@/lib/admin";
 import { formatDate, formatTime } from "@/lib/time";
+import { timeWithMethod } from "@/lib/labels";
 import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
 import { deleteAttendance, updateAttendance } from "./actions";
 
@@ -44,8 +45,11 @@ export default async function AttendancesPage() {
                 <td>
                   {a.schedule.branch.name} / {a.schedule.class.name}
                 </td>
-                <td>{a.checkInTime ? formatTime(a.checkInTime) : "-"}</td>
-                <td>{a.checkOutTime ? formatTime(a.checkOutTime) : "-"}</td>
+                <td>
+                  {a.checkInTime ? timeWithMethod(formatTime(a.checkInTime), a.checkInMethod) : "-"}
+                  {a.distanceMeter !== null && <div className="text-xs text-gray-500">±{Math.round(a.distanceMeter)} m</div>}
+                </td>
+                <td>{a.checkOutTime ? timeWithMethod(formatTime(a.checkOutTime), a.checkOutMethod) : "-"}</td>
                 <td>{a.studentCount ?? "-"}</td>
                 <td>
                   <ActionForm action={updateAttendance.bind(null, a.id)} className="flex flex-col gap-1">

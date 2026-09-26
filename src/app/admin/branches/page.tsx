@@ -19,6 +19,7 @@ export default async function BranchesPage() {
             <th className="py-2">Nama</th>
             <th>Alamat</th>
             <th>Radius (m)</th>
+            <th>Absen</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -29,6 +30,7 @@ export default async function BranchesPage() {
               <td className="py-2">{b.name}</td>
               <td>{b.address}</td>
               <td>{b.radiusMeter}</td>
+              <td>{b.allowDirectCheckin ? "QR / Langsung" : "Wajib QR"}</td>
               <td>{b.status === "ACTIVE" ? "Aktif" : "Nonaktif"}</td>
               <td className="py-2">
                 <div className="flex justify-end gap-3">
@@ -50,7 +52,7 @@ export default async function BranchesPage() {
           ))}
           {branches.length === 0 && (
             <tr>
-              <td colSpan={5} className="py-4 text-gray-500">
+              <td colSpan={6} className="py-4 text-gray-500">
                 {scope.isSuperadmin ? "Belum ada cabang." : "Anda belum ditugaskan ke cabang mana pun. Hubungi superadmin."}
               </td>
             </tr>

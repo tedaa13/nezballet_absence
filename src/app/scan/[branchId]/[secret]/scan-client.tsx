@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getLocation } from "@/lib/geolocation";
 import { checkInAction, checkOutAction } from "./actions";
 
 type ScheduleInfo = { id: number; className: string; startTime: string; endTime: string };
@@ -10,19 +11,6 @@ type Props =
   | { mode: "checkout"; branchId: number; secret: string; branchName: string; schedule: ScheduleInfo; attendanceId: number }
   | { mode: "done"; branchId: number; secret: string; branchName: string; schedule: ScheduleInfo }
   | { mode: "none"; branchId: number; secret: string; branchName: string };
-
-function getLocation(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Browser tidak mendukung deteksi lokasi."));
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-    });
-  });
-}
 
 export function ScanClient(props: Props) {
   const [loading, setLoading] = useState(false);
