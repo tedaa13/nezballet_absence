@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +9,7 @@ export default async function BranchQrPage({ params }: { params: Promise<{ id: s
   const branch = await prisma.branch.findUnique({ where: { id: Number(id) } });
   if (!branch) notFound();
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (await requestOrigin());
   const scanUrl = `${baseUrl}/scan/${branch.id}/${branch.qrSecret}`;
   const qrDataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2 });
 
@@ -33,4 +34,12 @@ export default async function BranchQrPage({ params }: { params: Promise<{ id: s
       </form>
     </div>
   );
+}
+
+// Fallback when NEXT_PUBLIC_APP_URL is unset: the domain the admin is browsing on.
+async function requestOrigin(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
 }
