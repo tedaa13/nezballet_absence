@@ -1,0 +1,43 @@
+import Link from "next/link";
+import { auth, signOut } from "@/auth";
+
+const NAV = [
+  { href: "/admin/branches", label: "Cabang" },
+  { href: "/admin/teachers", label: "Guru" },
+  { href: "/admin/classes", label: "Kelas" },
+  { href: "/admin/schedules", label: "Jadwal" },
+  { href: "/admin/attendances", label: "Presensi" },
+];
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+
+  return (
+    <div className="min-h-screen">
+      <header className="flex items-center justify-between border-b px-6 py-3">
+        <div className="flex items-center gap-6">
+          <span className="font-semibold">Absensi Balet</span>
+          <nav className="flex gap-4 text-sm">
+            {NAV.map((item) => (
+              <Link key={item.href} href={item.href} className="text-gray-700 hover:text-black">
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <form
+          action={async () => {
+            "use server";
+            await signOut({ redirectTo: "/login" });
+          }}
+        >
+          <span className="mr-3 text-sm text-gray-500">{session?.user?.name}</span>
+          <button type="submit" className="text-sm text-blue-600 underline">
+            Keluar
+          </button>
+        </form>
+      </header>
+      <main className="p-6">{children}</main>
+    </div>
+  );
+}

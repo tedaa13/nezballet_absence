@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  // Non-pooled connection for migrations (Neon: the URL without "-pooler"). Same as DATABASE_URL locally.
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  GURU
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TeacherStatus {
+  ACTIVE
+  INACTIVE
+  CUTI
+}
+
+enum ScheduleStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AttendanceStatus {
+  HADIR
+  TELAT
+  IZIN
+  SAKIT
+  TIDAK_HADIR
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String     @unique
+  password  String
+  phone     String?
+  role      Role       @default(GURU)
+  status    UserStatus @default(ACTIVE)
+  teacher   Teacher?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Branch {
+  id          Int        @id @default(autoincrement())
+  name        String
+  address     String?
+  latitude    Float
+  longitude   Float
+  radiusMeter Int        @default(100)
+  qrSecret    String     @unique @default(cuid())
+  status      UserStatus @default(ACTIVE)
+  classes     Class[]
+  schedules   Schedule[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Teacher {
+  id             Int           @id @default(autoincrement())
+  userId         Int           @unique
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone          String?
+  photo          String?
+  specialization String?
+  status         TeacherStatus @default(ACTIVE)
+  joinDate       DateTime?
+  schedules      Schedule[]
+  attendances    Attendance[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Class {
+  id        Int        @id @default(autoincrement())
+  branchId  Int
+  branch    Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  name      String
+  level     String?
+  capacity  Int?
+  status    UserStatus @default(ACTIVE)
+  schedules Schedule[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+// Recurring weekly pattern. A concrete attendance is tied to (schedule, specific date) —
+// no separate "session" table is generated per date, keeping this lean.
+model Schedule {
+  id                 Int            @id @default(autoincrement())
+  branchId           Int
+  branch             Branch         @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  classId            Int
+  class              Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId          Int
+  teacher            Teacher        @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  dayOfWeek          Int // 0 = Sunday .. 6 = Saturday
+  startTime          String // "HH:mm"
+  endTime            String // "HH:mm"
+  effectiveStartDate DateTime
+  effectiveEndDate   DateTime?
+  status             ScheduleStatus @default(ACTIVE)
+  attendances        Attendance[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+}
+
+model Attendance {
+  id             Int              @id @default(autoincrement())
+  scheduleId     Int
+  schedule       Schedule         @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  teacherId      Int
+  teacher        Teacher          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  attendanceDate DateTime // date only, midnight UTC
+  checkInTime    DateTime?
+  checkInLat     Float?
+  checkInLng     Float?
+  distanceMeter  Float?
+  status         AttendanceStatus @default(TIDAK_HADIR)
+  checkOutTime   DateTime?
+  checkOutLat    Float?
+  checkOutLng    Float?
+  studentCount   Int?
+  notes          String?
+  verifiedBy     Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@unique([scheduleId, attendanceDate])
+}

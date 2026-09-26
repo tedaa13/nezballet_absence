@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Absensi Guru Balet
 
-## Getting Started
+Absensi guru berbasis web (bukan aplikasi mobile), memakai QR statis per cabang + validasi lokasi (GPS) & jadwal.
 
-First, run the development server:
+## Konsep singkat
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Tiap cabang punya **1 QR tetap** (dicetak, ditempel di lokasi) — tidak perlu device/admin standby di cabang.
+- Guru scan QR pakai HP sendiri (browser). Backend yang memvalidasi:
+  - apakah guru punya jadwal aktif di cabang itu sekarang (window: 15 menit sebelum jadwal s.d. jadwal selesai),
+  - apakah lokasi GPS guru berada dalam radius toleransi cabang (Haversine, `src/lib/geo.ts`),
+  - status HADIR/TELAT otomatis dari jam sistem.
+- Scan kedua di sesi yang sama = absen keluar (checkout), sekaligus input jumlah murid hadir.
+- 3 role: SUPERADMIN, ADMIN, GURU (lihat `prisma/schema.prisma`).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup lokal
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Copy `.env.example` ke `.env` dan isi `DATABASE_URL` (bisa pakai Postgres lokal atau gratis di [Neon](https://neon.tech)/[Supabase](https://supabase.com)).
+2. Generate `AUTH_SECRET`:
+   ```bash
+   openssl rand -base64 32
+   ```
+3. Install dependency & siapkan database:
+   ```bash
+   npm install
+   npx prisma migrate dev --name init
+   npm run seed
+   ```
+   Seed membuat 1 akun superadmin: `superadmin@studio.local` / `ubahsegera123` (ganti setelah login pertama).
+4. Jalankan dev server:
+   ```bash
+   npm run dev
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Alur pemakaian
 
-## Learn More
+1. Superadmin/admin login di `/admin`, input data **Cabang** (termasuk koordinat lokasi & radius toleransi), **Guru**, **Kelas**, **Jadwal**.
+2. Di halaman **Cabang → QR**, unduh & cetak QR untuk masing-masing cabang, tempel di lokasi.
+3. Guru login di HP masing-masing, scan QR di lokasi saat datang & saat pulang.
+4. Rekap presensi bisa dilihat/diedit manual di **Admin → Presensi**.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy ke cloud
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Hosting**: [Vercel](https://vercel.com) — import repo GitHub, framework Next.js terdeteksi otomatis.
+- **Database**: [Neon](https://neon.tech) (region Singapore) — hanya dipakai sebagai Postgres.
+- Env var di Vercel:
+  - `DATABASE_URL` — connection string Neon **pooled** (host mengandung `-pooler`)
+  - `DIRECT_URL` — connection string Neon **non-pooled** (tanpa `-pooler`), dipakai `prisma migrate`
+  - `AUTH_SECRET` — `openssl rand -base64 32`
+  - `NEXT_PUBLIC_APP_URL` — domain produksi, mis. `https://absensi-xxx.vercel.app` (dipakai di link QR)
+  - `APP_TIMEZONE` — opsional, default `Asia/Jakarta`
+- Vercel menjalankan script `vercel-build`, yang otomatis `prisma migrate deploy` sebelum `next build`.
+- Setelah deploy pertama, jalankan `npm run seed` sekali (dengan `DATABASE_URL` Neon) untuk akun superadmin awal, lalu segera ganti password-nya.
+- Cetak QR cabang **setelah** `NEXT_PUBLIC_APP_URL` diisi domain produksi.
