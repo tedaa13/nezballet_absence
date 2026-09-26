@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/prisma";
+import { ActionForm, SubmitButton } from "@/components/action-form";
 import { regenerateBranchQr } from "../../actions";
 
 export default async function BranchQrPage({ params }: { params: Promise<{ id: string }> }) {
@@ -12,8 +13,6 @@ export default async function BranchQrPage({ params }: { params: Promise<{ id: s
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (await requestOrigin());
   const scanUrl = `${baseUrl}/scan/${branch.id}/${branch.qrSecret}`;
   const qrDataUrl = await QRCode.toDataURL(scanUrl, { width: 400, margin: 2 });
-
-  const regenerateWithId = regenerateBranchQr.bind(null, branch.id);
 
   return (
     <div className="max-w-sm space-y-4 text-center">
@@ -27,11 +26,15 @@ export default async function BranchQrPage({ params }: { params: Promise<{ id: s
       <a href={qrDataUrl} download={`qr-${branch.name}.png`} className="block text-blue-600 underline">
         Unduh PNG
       </a>
-      <form action={regenerateWithId}>
-        <button type="submit" className="rounded border px-4 py-2 text-sm text-red-600">
+      <ActionForm
+        action={regenerateBranchQr.bind(null, branch.id)}
+        confirmMessage="Buat QR baru? QR lama yang sudah ditempel jadi tidak berlaku."
+        className="space-y-2"
+      >
+        <SubmitButton variant="danger" pendingText="Membuat QR…">
           Buat ulang QR (QR lama jadi tidak berlaku)
-        </button>
-      </form>
+        </SubmitButton>
+      </ActionForm>
     </div>
   );
 }

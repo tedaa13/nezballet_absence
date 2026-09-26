@@ -2,49 +2,71 @@
 
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { type ActionResult, optionalNumber, optionalString, requireAdmin } from "@/lib/admin";
 
-async function requireAdmin() {
-  const session = await auth();
-  if (!session?.user || (session.user.role !== "SUPERADMIN" && session.user.role !== "ADMIN")) {
-    throw new Error("Unauthorized");
-  }
-}
-
-export async function createBranch(formData: FormData) {
-  await requireAdmin();
-  await prisma.branch.create({
+function parseBranch(formData: FormData) {
+  const latitude = Number(formData.get("latitude"));
+  const longitude = Number(formData.get("longitude"));
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) return { error: "Latitude tidak valid." };
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) return { error: "Longitude tidak valid." };
+  return {
     data: {
-      name: String(formData.get("name")),
-      address: String(formData.get("address") || ""),
-      latitude: Number(formData.get("latitude")),
-      longitude: Number(formData.get("longitude")),
-      radiusMeter: Number(formData.get("radiusMeter") || 100),
+      name: String(formData.get("name")).trim(),
+      address: optionalString(formData, "address"),
+      latitude,
+      longitude,
+      radiusMeter: optionalNumber(formData, "radiusMeter") ?? 100,
     },
-  });
-  revalidatePath("/admin/branches");
+  };
 }
 
-export async function updateBranch(id: number, formData: FormData) {
+export async function createBranch(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireAdmin();
+  const parsed = parseBranch(formData);
+  if (parsed.error) return { ok: false, message: parsed.error };
+
+  await prisma.branch.create({ data: parsed.data! });
+  revalidatePath("/admin/branches");
+  return { ok: true, message: `Cabang "${parsed.data!.name}" ditambahkan.` };
+}
+
+export async function updateBranch(id: number, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = parseBranch(formData);
+  if (parsed.error) return { ok: false, message: parsed.error };
+
   await prisma.branch.update({
     where: { id },
-    data: {
-      name: String(formData.get("name")),
-      address: String(formData.get("address") || ""),
-      latitude: Number(formData.get("latitude")),
-      longitude: Number(formData.get("longitude")),
-      radiusMeter: Number(formData.get("radiusMeter") || 100),
-      status: formData.get("status") === "INACTIVE" ? "INACTIVE" : "ACTIVE",
-    },
+    data: { ...parsed.data!, status: formData.get("status") === "INACTIVE" ? "INACTIVE" : "ACTIVE" },
   });
   revalidatePath("/admin/branches");
+  redirect("/admin/branches");
 }
 
-export async function regenerateBranchQr(id: number) {
+export async function deleteBranch(id: number): Promise<ActionResult> {
+  await requireAdmin();
+  const [classCount, scheduleCount] = await Promise.all([
+    prisma.class.count({ where: { branchId: id } }),
+    prisma.schedule.count({ where: { branchId: id } }),
+  ]);
+  if (classCount > 0 || scheduleCount > 0) {
+    return {
+      ok: false,
+      message: `Tidak bisa dihapus: masih ada ${classCount} kelas & ${scheduleCount} jadwal. Hapus dulu, atau ubah status cabang jadi Nonaktif.`,
+    };
+  }
+
+  await prisma.branch.delete({ where: { id } });
+  revalidatePath("/admin/branches");
+  return { ok: true, message: "Cabang dihapus." };
+}
+
+export async function regenerateBranchQr(id: number): Promise<ActionResult> {
   await requireAdmin();
   await prisma.branch.update({ where: { id }, data: { qrSecret: randomUUID() } });
   revalidatePath("/admin/branches");
   revalidatePath(`/admin/branches/${id}/qr`);
+  return { ok: true, message: "QR baru dibuat. Cetak ulang dan ganti QR lama di lokasi." };
 }

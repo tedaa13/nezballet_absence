@@ -1,27 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { type ActionResult, optionalString, requireAdmin } from "@/lib/admin";
 
-export async function updateAttendance(attendanceId: number, formData: FormData) {
-  const session = await auth();
-  if (!session?.user || (session.user.role !== "SUPERADMIN" && session.user.role !== "ADMIN")) {
-    throw new Error("Unauthorized");
-  }
+const STATUSES = ["HADIR", "TELAT", "IZIN", "SAKIT", "TIDAK_HADIR"] as const;
+
+export async function updateAttendance(attendanceId: number, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const user = await requireAdmin();
+  const status = String(formData.get("status")) as (typeof STATUSES)[number];
+  if (!STATUSES.includes(status)) return { ok: false, message: "Status tidak valid." };
 
   await prisma.attendance.update({
     where: { id: attendanceId },
-    data: {
-      status: String(formData.get("status")) as
-        | "HADIR"
-        | "TELAT"
-        | "IZIN"
-        | "SAKIT"
-        | "TIDAK_HADIR",
-      notes: String(formData.get("notes") || ""),
-      verifiedBy: Number(session.user.id),
-    },
+    data: { status, notes: optionalString(formData, "notes"), verifiedBy: Number(user.id) },
   });
   revalidatePath("/admin/attendances");
+  return { ok: true, message: "Tersimpan." };
+}
+
+export async function deleteAttendance(attendanceId: number): Promise<ActionResult> {
+  await requireAdmin();
+  await prisma.attendance.delete({ where: { id: attendanceId } });
+  revalidatePath("/admin/attendances");
+  return { ok: true, message: "Presensi dihapus." };
 }

@@ -1,5 +1,9 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { createTeacher, updateTeacherStatus } from "./actions";
+import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
+import { Field, inputClass } from "@/components/field";
+import { createTeacher, deleteTeacher } from "./actions";
+import { TEACHER_STATUS_LABEL, TeacherFields } from "./teacher-fields";
 
 export default async function TeachersPage() {
   const teachers = await prisma.teacher.findMany({
@@ -16,71 +20,55 @@ export default async function TeachersPage() {
           <tr className="border-b text-left">
             <th className="py-2">Nama</th>
             <th>Email</th>
+            <th>No. HP</th>
             <th>Spesialisasi</th>
             <th>Status</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {teachers.map((t) => {
-            const updateStatus = updateTeacherStatus.bind(null, t.id);
-            return (
-              <tr key={t.id} className="border-b">
-                <td className="py-2">{t.user.name}</td>
-                <td>{t.user.email}</td>
-                <td>{t.specialization}</td>
-                <td>
-                  <form action={updateStatus} className="flex items-center gap-2">
-                    <select
-                      name="status"
-                      defaultValue={t.status}
-                      className="rounded border px-2 py-1"
-                    >
-                      <option value="ACTIVE">Aktif</option>
-                      <option value="CUTI">Cuti</option>
-                      <option value="INACTIVE">Nonaktif</option>
-                    </select>
-                    <button type="submit" className="text-blue-600 underline">
-                      Simpan
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            );
-          })}
+          {teachers.map((t) => (
+            <tr key={t.id} className="border-b align-top">
+              <td className="py-2">{t.user.name}</td>
+              <td>{t.user.email}</td>
+              <td>{t.phone}</td>
+              <td>{t.specialization}</td>
+              <td>{TEACHER_STATUS_LABEL[t.status]}</td>
+              <td className="py-2">
+                <div className="flex justify-end gap-3">
+                  <Link href={`/admin/teachers/${t.id}/edit`} className="text-blue-600 underline">
+                    Edit
+                  </Link>
+                  <DeleteButton
+                    action={deleteTeacher.bind(null, t.id)}
+                    confirmMessage={`Hapus guru "${t.user.name}" beserta akun loginnya?`}
+                  />
+                </div>
+              </td>
+            </tr>
+          ))}
+          {teachers.length === 0 && (
+            <tr>
+              <td colSpan={6} className="py-4 text-gray-500">
+                Belum ada guru.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
 
-      <form action={createTeacher} autoComplete="off" className="max-w-md space-y-3 border-t pt-6">
+      <ActionForm action={createTeacher} resetOnSuccess className="max-w-md space-y-3 border-t pt-6">
         <h2 className="font-medium">Tambah Guru</h2>
-        <label className="block text-sm">
-          Nama
-          <input name="name" required autoComplete="off" className="mt-1 w-full rounded border px-3 py-2" />
-        </label>
-        <label className="block text-sm">
-          Email (untuk login guru)
-          <input name="email" type="email" required autoComplete="off" placeholder="mis. sinta@nezballet.id" className="mt-1 w-full rounded border px-3 py-2" />
-        </label>
-        <label className="block text-sm">
-          Password awal guru
-          <input name="password" type="text" required minLength={6} autoComplete="new-password" className="mt-1 w-full rounded border px-3 py-2" />
-        </label>
-        <p className="text-xs text-gray-600">Catat email & password ini untuk diberikan ke guru — password tidak bisa dilihat lagi setelah disimpan.</p>
-        <label className="block text-sm">
-          No. HP
-          <input name="phone" autoComplete="off" className="mt-1 w-full rounded border px-3 py-2" />
-        </label>
-        <label className="block text-sm">
-          Spesialisasi
-          <input name="specialization" placeholder="mis. Ballet Basic" className="mt-1 w-full rounded border px-3 py-2" />
-        </label>
-        <label className="block text-sm">
-          Tanggal bergabung
-          <input name="joinDate" type="date" className="mt-1 w-full rounded border px-3 py-2" />
-        </label>
-        <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">
-          Simpan
-        </button>
-      </form>
+        <TeacherFields />
+        <Field label="Password awal guru">
+          <input name="password" type="text" required minLength={6} autoComplete="new-password" className={inputClass} />
+        </Field>
+        <p className="text-xs text-gray-600">
+          Catat email & password ini untuk diberikan ke guru — password tidak bisa dilihat lagi setelah disimpan
+          (tapi bisa di-reset lewat Edit).
+        </p>
+        <SubmitButton />
+      </ActionForm>
     </div>
   );
 }

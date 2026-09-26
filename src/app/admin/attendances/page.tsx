@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatTime } from "@/lib/time";
-import { updateAttendance } from "./actions";
+import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
+import { deleteAttendance, updateAttendance } from "./actions";
 
 const STATUS_OPTIONS = ["HADIR", "TELAT", "IZIN", "SAKIT", "TIDAK_HADIR"];
 
@@ -28,11 +29,11 @@ export default async function AttendancesPage() {
             <th>Keluar</th>
             <th>Murid</th>
             <th>Status & Catatan</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {attendances.map((a) => {
-            const update = updateAttendance.bind(null, a.id);
             return (
               <tr key={a.id} className="border-b align-top">
                 <td className="py-2">{formatDate(a.attendanceDate)}</td>
@@ -44,7 +45,7 @@ export default async function AttendancesPage() {
                 <td>{a.checkOutTime ? formatTime(a.checkOutTime) : "-"}</td>
                 <td>{a.studentCount ?? "-"}</td>
                 <td>
-                  <form action={update} className="flex flex-col gap-1">
+                  <ActionForm action={updateAttendance.bind(null, a.id)} className="flex flex-col gap-1">
                     <select name="status" defaultValue={a.status} className="rounded border px-2 py-1">
                       {STATUS_OPTIONS.map((s) => (
                         <option key={s} value={s}>
@@ -58,10 +59,16 @@ export default async function AttendancesPage() {
                       placeholder="Catatan"
                       className="rounded border px-2 py-1"
                     />
-                    <button type="submit" className="self-start text-blue-600 underline">
-                      Simpan
-                    </button>
-                  </form>
+                    <div className="self-start">
+                      <SubmitButton variant="link" />
+                    </div>
+                  </ActionForm>
+                </td>
+                <td className="py-2 text-right">
+                  <DeleteButton
+                    action={deleteAttendance.bind(null, a.id)}
+                    confirmMessage={`Hapus presensi ${a.teacher.user.name} tanggal ${formatDate(a.attendanceDate)}?`}
+                  />
                 </td>
               </tr>
             );

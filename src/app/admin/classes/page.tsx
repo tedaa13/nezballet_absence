@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { createClass, updateClassStatus } from "./actions";
+import { ActionForm, DeleteButton, SubmitButton } from "@/components/action-form";
+import { createClass, deleteClass } from "./actions";
+import { ClassFields } from "./class-fields";
 
 export default async function ClassesPage() {
   const [classes, branches] = await Promise.all([
@@ -19,55 +22,42 @@ export default async function ClassesPage() {
             <th>Level</th>
             <th>Kapasitas</th>
             <th>Status</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {classes.map((c) => {
-            const updateStatus = updateClassStatus.bind(null, c.id);
-            return (
-              <tr key={c.id} className="border-b">
-                <td className="py-2">{c.name}</td>
-                <td>{c.branch.name}</td>
-                <td>{c.level}</td>
-                <td>{c.capacity ?? "-"}</td>
-                <td>
-                  <form action={updateStatus} className="flex items-center gap-2">
-                    <select
-                      name="status"
-                      defaultValue={c.status}
-                      className="rounded border px-2 py-1"
-                    >
-                      <option value="ACTIVE">Aktif</option>
-                      <option value="INACTIVE">Nonaktif</option>
-                    </select>
-                    <button type="submit" className="text-blue-600 underline">
-                      Simpan
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            );
-          })}
+          {classes.map((c) => (
+            <tr key={c.id} className="border-b align-top">
+              <td className="py-2">{c.name}</td>
+              <td>{c.branch.name}</td>
+              <td>{c.level}</td>
+              <td>{c.capacity ?? "-"}</td>
+              <td>{c.status === "ACTIVE" ? "Aktif" : "Nonaktif"}</td>
+              <td className="py-2">
+                <div className="flex justify-end gap-3">
+                  <Link href={`/admin/classes/${c.id}/edit`} className="text-blue-600 underline">
+                    Edit
+                  </Link>
+                  <DeleteButton action={deleteClass.bind(null, c.id)} confirmMessage={`Hapus kelas "${c.name}"?`} />
+                </div>
+              </td>
+            </tr>
+          ))}
+          {classes.length === 0 && (
+            <tr>
+              <td colSpan={6} className="py-4 text-gray-500">
+                Belum ada kelas.
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
 
-      <form action={createClass} className="max-w-md space-y-3 border-t pt-6">
+      <ActionForm action={createClass} resetOnSuccess className="max-w-md space-y-3 border-t pt-6">
         <h2 className="font-medium">Tambah Kelas</h2>
-        <select name="branchId" required className="w-full rounded border px-3 py-2">
-          <option value="">Pilih cabang</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-        <input name="name" placeholder="Nama kelas" required className="w-full rounded border px-3 py-2" />
-        <input name="level" placeholder="Level (mis. Basic, Intermediate)" className="w-full rounded border px-3 py-2" />
-        <input name="capacity" type="number" placeholder="Kapasitas" className="w-full rounded border px-3 py-2" />
-        <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">
-          Simpan
-        </button>
-      </form>
+        <ClassFields branches={branches} />
+        <SubmitButton />
+      </ActionForm>
     </div>
   );
 }
